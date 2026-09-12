@@ -1,0 +1,137 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>SAVORÉ — Secure Admin</title>
+<style>
+*{box-sizing:border-box}body{margin:0;background:#f4efe9;color:#211913;font-family:Arial,sans-serif}
+.wrap{max-width:1100px;margin:auto;padding:22px}.top{display:flex;justify-content:space-between;align-items:center;margin-bottom:18px}
+h1,h2{font-family:Georgia,serif}.brand{font:700 34px Georgia}.sub{font-size:11px;letter-spacing:.16em;color:#76685e}
+.panel{background:#fff;border:1px solid #ded3ca;border-radius:15px;padding:18px;margin:14px 0}
+.grid{display:grid;grid-template-columns:repeat(2,1fr);gap:12px}.field label{display:block;font-size:11px;font-weight:700;margin-bottom:5px;color:#6c5e55}
+input,select,textarea{width:100%;padding:11px;border:1px solid #d7cbc0;border-radius:9px;background:#fff}button{padding:10px 14px;border:0;border-radius:9px;cursor:pointer}.primary{background:#211913;color:#fff}.light{background:#e8dfd7}.danger{background:#a33c31;color:#fff}
+.actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:13px}.hide{display:none}.msg{padding:10px;border-radius:8px;background:#eee7e0;font-size:13px;margin:10px 0}
+.cards{display:grid;grid-template-columns:repeat(3,1fr);gap:12px}.card{border:1px solid #e2d8cf;border-radius:11px;overflow:hidden}.pic{height:145px;background:#eee}.pic img{width:100%;height:100%;object-fit:cover}.body{padding:11px}.body h3{margin:0 0 5px}.muted{font-size:12px;color:#76685e}
+#login{max-width:430px;margin:8vh auto}.cat{display:flex;gap:7px;align-items:center;border:1px solid #e2d8cf;padding:9px;border-radius:9px;margin:6px 0}
+@media(max-width:750px){.cards{grid-template-columns:repeat(2,1fr)}.grid{grid-template-columns:1fr}}@media(max-width:500px){.cards{grid-template-columns:1fr}.wrap{padding:13px}}
+</style>
+</head>
+<body>
+<div id="login" class="panel">
+  <div class="brand">SAVORÉ<div class="sub">OWNER ADMIN</div></div>
+  <h2>Sign in</h2>
+  <div class="field"><label>EMAIL</label><input id="email" type="email" autocomplete="username"></div>
+  <div class="field" style="margin-top:10px"><label>PASSWORD</label><input id="password" type="password" autocomplete="current-password"></div>
+  <div class="actions"><button class="primary" onclick="login()">Login</button></div>
+  <div id="loginMsg" class="msg">Only authorized restaurant owners can access this panel.</div>
+</div>
+
+<div id="app" class="wrap hide">
+  <div class="top"><div><div class="brand">SAVORÉ</div><div class="sub">OWNER ADMIN PANEL</div></div>
+  <div class="actions"><button class="light" onclick="window.location='index.html'">View Menu</button><button class="danger" onclick="logout()">Logout</button></div></div>
+
+  <div id="msg" class="msg">Loading…</div>
+
+  <section class="panel">
+    <h2>Restaurant Settings</h2>
+    <div class="grid">
+      <div class="field"><label>RESTAURANT NAME</label><input id="brand"></div>
+      <div class="field"><label>TAGLINE</label><input id="tagline"></div>
+      <div class="field"><label>LOGO URL</label><input id="logo"></div>
+      <div class="field"><label>WHATSAPP NUMBER</label><input id="whatsapp"></div>
+    </div>
+    <div class="actions"><button class="primary" onclick="saveSettings()">Save Settings</button></div>
+  </section>
+
+  <section class="panel">
+    <h2>Categories</h2>
+    <div class="grid"><div class="field"><label>NEW CATEGORY</label><input id="newCat" placeholder="e.g. Thai"></div></div>
+    <div class="actions"><button class="primary" onclick="addCategory()">+ Add Category</button></div>
+    <div id="categories"></div>
+  </section>
+
+  <section class="panel">
+    <h2 id="formTitle">Add Food</h2>
+    <input type="hidden" id="editId">
+    <div class="grid">
+      <div class="field"><label>FOOD NAME</label><input id="name"></div>
+      <div class="field"><label>CATEGORY</label><select id="category"></select></div>
+      <div class="field"><label>PRICE</label><input id="price" type="number" min="0"></div>
+      <div class="field"><label>OFFER PRICE</label><input id="offerPrice" type="number" min="0"></div>
+      <div class="field"><label>IMAGE URL</label><input id="image" placeholder="https://..."></div>
+      <div class="field"><label>BADGE</label><input id="badge"></div>
+    </div>
+    <div class="field" style="margin-top:12px"><label>DESCRIPTION</label><textarea id="description" rows="3"></textarea></div>
+    <div class="actions"><button class="primary" onclick="saveProduct()">Save Food</button><button class="light" onclick="clearForm()">Clear</button></div>
+  </section>
+
+  <section class="panel"><h2>Food Items</h2><div id="products" class="cards"></div></section>
+</div>
+
+<script src="supabase-config.js"></script>
+<script>
+let db=null, session=null, cats=[], products=[];
+const $=id=>document.getElementById(id);
+async function boot(){
+  if(!window.SUPABASE_URL || window.SUPABASE_URL.startsWith("YOUR_")) { $("loginMsg").textContent="Configure supabase-config.js first."; return; }
+  const s=window.supabase.createClient(window.SUPABASE_URL,window.SUPABASE_ANON_KEY); db=s;
+  const r=await db.auth.getSession(); session=r.data.session; showAuth();
+  db.auth.onAuthStateChange((_e,ses)=>{session=ses;showAuth()});
+}
+async function login(){
+  const {error}=await db.auth.signInWithPassword({email:$("email").value,password:$("password").value});
+  $("loginMsg").textContent=error?error.message:"Login successful.";
+}
+async function logout(){await db.auth.signOut()}
+function showAuth(){if(session){$("login").classList.add("hide");$("app").classList.remove("hide");loadAll()}else{$("app").classList.add("hide");$("login").classList.remove("hide")}}
+function say(x){$("msg").textContent=x}
+async function loadAll(){
+  const [s,c,p]=await Promise.all([
+    db.from("restaurant_settings").select("*").eq("id",1).maybeSingle(),
+    db.from("categories").select("*").order("sort_order"),
+    db.from("products").select("*").order("sort_order")
+  ]);
+  if(s.error||c.error||p.error){say((s.error||c.error||p.error).message);return}
+  $("brand").value=s.data?.brand_name||"";$("tagline").value=s.data?.tagline||"";$("logo").value=s.data?.logo_url||"";$("whatsapp").value=s.data?.whatsapp_number||"";
+  cats=c.data||[];products=p.data||[];renderCats();renderProducts();
+}
+async function saveSettings(){
+  const {error}=await db.from("restaurant_settings").upsert({id:1,brand_name:$("brand").value,tagline:$("tagline").value,logo_url:$("logo").value,whatsapp_number:$("whatsapp").value});
+  say(error?error.message:"Settings saved.");
+}
+function renderCats(){
+  $("category").innerHTML=cats.map(c=>`<option value="${esc(c.name)}">${esc(c.name)}</option>`).join("");
+  $("categories").innerHTML=cats.map(c=>`<div class="cat"><b style="flex:1">${esc(c.name)}</b><button class="light" onclick="renameCategory('${c.id}','${esc(c.name)}')">Rename</button><button class="danger" onclick="deleteCategory('${c.id}')">Delete</button></div>`).join("");
+}
+async function addCategory(){
+  const name=$("newCat").value.trim();if(!name)return;
+  const {error}=await db.from("categories").insert({name,sort_order:cats.length});
+  if(error)say(error.message);else{$("newCat").value="";await loadAll()}
+}
+async function renameCategory(id,old){
+  const name=prompt("New category name:",old);if(!name||name.trim()==old)return;
+  const {error}=await db.from("categories").update({name:name.trim()}).eq("id",id);
+  if(!error) await db.from("products").update({category_name:name.trim()}).eq("category_name",old);
+  say(error?error.message:"Category updated.");await loadAll();
+}
+async function deleteCategory(id){
+  const c=cats.find(x=>x.id==id);if(!c||!confirm("Delete "+c.name+"? Products in this category should be moved first."))return;
+  const count=products.filter(p=>p.category_name==c.name).length;if(count){alert("This category has "+count+" product(s). Move/delete them first.");return}
+  const {error}=await db.from("categories").delete().eq("id",id);say(error?error.message:"Category deleted.");await loadAll();
+}
+function clearForm(){$("editId").value="";$("name").value="";$("price").value="";$("offerPrice").value="";$("image").value="";$("badge").value="";$("description").value="";$("formTitle").textContent="Add Food"}
+function editProduct(id){const p=products.find(x=>x.id==id);if(!p)return;$("editId").value=id;$("name").value=p.name;$("category").value=p.category_name;$("price").value=p.price||"";$("offerPrice").value=p.offer_price||"";$("image").value=p.image_url||"";$("badge").value=p.badge||"";$("description").value=p.description||"";$("formTitle").textContent="Edit Food"}
+async function saveProduct(){
+  const id=$("editId").value;
+  const obj={name:$("name").value.trim(),category_name:$("category").value,price:Number($("price").value||0),offer_price:$("offerPrice").value?Number($("offerPrice").value):null,image_url:$("image").value.trim(),badge:$("badge").value.trim(),description:$("description").value.trim()};
+  if(!obj.name||!obj.image_url){alert("Food name and image URL are required.");return}
+  let q=id?db.from("products").update(obj).eq("id",id):db.from("products").insert({...obj,available:true,sort_order:products.length});
+  const {error}=await q;say(error?error.message:"Food saved.");if(!error){clearForm();await loadAll()}
+}
+async function toggle(id,available){const {error}=await db.from("products").update({available:!available}).eq("id",id);say(error?error.message:"Availability updated.");await loadAll()}
+async function delProduct(id){if(!confirm("Delete this food?"))return;const {error}=await db.from("products").delete().eq("id",id);say(error?error.message:"Food deleted.");await loadAll()}
+function renderProducts(){$("products").innerHTML=products.map(p=>`<div class="card"><div class="pic"><img src="${esc(p.image_url)}" alt="${esc(p.name)}"></div><div class="body"><h3>${esc(p.name)}</h3><div class="muted">${esc(p.category_name)} · ৳${Number(p.offer_price||p.price||0).toLocaleString()}</div><div class="actions"><button class="light" onclick="editProduct('${p.id}')">Edit</button><button class="light" onclick="toggle('${p.id}',${!!p.available})">${p.available?"Sold Out":"Available"}</button><button class="danger" onclick="delProduct('${p.id}')">Delete</button></div></div></div>`).join("")}
+function esc(v){return String(v??"").replace(/[&<>'"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;","'":"&#39;",'"':"&quot;"}[c]))}
+function bootAfter(){if(window.supabase)boot();else setTimeout(bootAfter,200)}bootAfter();
+</script>
+</body></html>

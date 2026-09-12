@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#11100e">
+<meta name="description" content="SAVORÉ Chinese & Thai digital menu.">
+<title>SAVORÉ — Digital Menu</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@500;600;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="style.css">
+  <script src="supabase-config.js"></script>
+</head>
+<body>
+<header class="menu-header">
+  <div class="header-inner">
+    <a class="brand" href="#menu">
+      <span class="logo-wrap"><img id="navLogo" src="assets/logo.svg" alt="SAVORÉ"></span>
+      <span class="brand-copy"><strong id="brandName">SAVORÉ</strong><small id="brandTagline">Chinese • Thai • Fine Dining</small></span>
+    </a>
+    <nav class="desktop-nav"><a href="#menu">MENU</a></nav>
+    <button class="cart-btn" id="openCart" type="button">
+      <span>My Order</span><b id="cartCount">0</b>
+    </button>
+  </div>
+</header>
+
+<main>
+  <section class="menu-section" id="menu">
+    <div class="menu-title">
+      <span class="section-kicker">SAVORÉ · CHINESE & THAI</span>
+      <h1>MENU</h1>
+      <p>Freshly prepared • Served with care</p>
+    </div>
+    <div class="category-tabs" id="categoryTabs"></div>
+    <div class="food-grid" id="foodGrid"></div>
+  </section>
+</main>
+
+<footer class="menu-footer" id="footer">
+  <div class="footer-brand">
+    <img src="assets/logo.svg" alt="">
+    <div><strong id="footerBrand">SAVORÉ</strong><span id="footerTagline">Chinese • Thai • Fine Dining</span></div>
+  </div>
+  <div class="footer-meta">
+    <span id="footerAddress">Dhaka, Bangladesh</span>
+    <small>© <span id="year"></span> SAVORÉ</small>
+  </div>
+</footer>
+
+<div class="cart-drawer" id="cartDrawer" aria-hidden="true">
+  <div class="cart-backdrop" id="closeCart"></div>
+  <aside class="cart-panel">
+    <div class="cart-head">
+      <div><span class="section-kicker">YOUR SELECTION</span><h3>My Order</h3></div>
+      <button id="closeCartBtn" type="button">×</button>
+    </div>
+    <div id="cartItems" class="cart-items"></div>
+    <div class="cart-summary">
+      <div class="summary-line"><span>Total</span><strong id="cartTotal">৳0</strong></div>
+      <p>Table number is required to send your order.</p>
+      <button id="checkoutBtn" class="primary-btn full-btn" type="button">Continue to Order →</button>
+    </div>
+  </aside>
+</div>
+
+<div class="checkout-modal" id="checkoutModal" aria-hidden="true">
+  <div class="checkout-backdrop" id="closeCheckout"></div>
+  <div class="checkout-card">
+    <div class="checkout-head">
+      <div><span class="section-kicker">FINAL STEP</span><h3>Table Order</h3></div>
+      <button id="closeCheckoutBtn" type="button">×</button>
+    </div>
+    <form id="checkoutForm">
+      <label class="required">Table Number<input name="table" required inputmode="numeric" placeholder="e.g. 12"></label>
+      <label>Your Name <span class="optional">(optional)</span><input name="name" placeholder="Your name" autocomplete="name"></label>
+      <label>Phone <span class="optional">(optional)</span><input name="phone" type="tel" placeholder="01XXXXXXXXX"></label>
+      <label>Special Request <span class="optional">(optional)</span><textarea name="note" rows="2" placeholder="Less spicy, sauce on the side..."></textarea></label>
+      <div class="checkout-total"><span>Order Total</span><strong id="checkoutTotal">৳0</strong></div>
+      <button class="primary-btn full-btn" type="submit">Send Order via WhatsApp ↗</button>
+    </form>
+  </div>
+</div>
+
+<script src="site-config.js"></script>
+<script src="app.js"></script>
+</body>
+</html>
